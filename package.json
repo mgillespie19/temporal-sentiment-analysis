@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "worker": "tsx src/temporal/worker.ts",
-    "worker:dev": "tsx watch src/temporal/worker.ts"
+    "worker": "ts-node src/temporal/worker.ts",
+    "worker:dev": "ts-node --watch src/temporal/worker.ts"
   },
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.7",
@@ -24,6 +24,7 @@
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^3.3.1",
+    "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "undici": "^7.15.0",
     "zod": "^4.1.1"

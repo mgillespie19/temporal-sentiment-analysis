@@ -1,4 +1,4 @@
-console.log('=== WORKER START ===');
+console.log('=== FILE LOADED ===', { pid: process.pid, cwd: process.cwd(), argv: process.argv });
 
 // Load environment variables from .env file
 try {
@@ -8,23 +8,25 @@ try {
   console.log('⚠️  dotenv not available, using process.env directly');
 }
 
-// Simple environment loading
-process.env.TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
+async function initializeWorker() {
+  console.log('=== WORKER START ===', { pid: process.pid, cwd: process.cwd(), argv: process.argv });
 
-console.log('Environment check:');
-console.log('TEMPORAL_ADDRESS:', process.env.TEMPORAL_ADDRESS);
+  // Simple environment loading
+  process.env.TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
 
-async function run() {
+  console.log('Environment check:');
+  console.log('TEMPORAL_ADDRESS:', process.env.TEMPORAL_ADDRESS);
+
   try {
     console.log('Importing Temporal Worker...');
     const { Worker } = await import('@temporalio/worker');
     
     console.log('Importing activities...');
-    const activities = await import('./activities');
+    const activities = require('./activities');
     
     console.log('Creating worker...');
     const worker = await Worker.create({
-      workflowsPath: require.resolve('./workflows.ts'),
+      workflowsPath: require.resolve('./workflows'),
       activities,
       taskQueue: 'sentiment-analysis',
     });
@@ -41,5 +43,4 @@ async function run() {
 }
 
 console.log('Starting worker...');
-
-run();
+initializeWorker();

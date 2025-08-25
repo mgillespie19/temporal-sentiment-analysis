@@ -1,8 +1,8 @@
-import { request } from 'undici';
-import { Review, ScoredReview, InvalidProductUrlError } from '../lib/types';
-import { config } from '../lib/config';
+const { request } = require('undici');
+const { InvalidProductUrlError } = require('./types');
+const { config } = require('./config');
 
-export async function resolveSkuAndCanonicalUrl(inputUrl: string): Promise<{ sku: string; canonicalUrl: string }> {
+async function resolveSkuAndCanonicalUrl(inputUrl: string): Promise<{ sku: string; canonicalUrl: string }> {
   try {
     // First try to extract SKU from URL pattern /site/<slug>/<SKU>.p
     const skuMatch = inputUrl.match(/\/(\d+)\.p(?:\?|$)/);
@@ -51,8 +51,8 @@ export async function resolveSkuAndCanonicalUrl(inputUrl: string): Promise<{ sku
   }
 }
 
-export async function fetchReviewsPaginated(sku: string, limit = 100): Promise<Review[]> {
-  const reviews: Review[] = [];
+async function fetchReviewsPaginated(sku: string, limit = 100): Promise<any[]> {
+  const reviews: any[] = [];
   const pageSize = 20;
   const maxPages = Math.ceil(limit / pageSize);
 
@@ -67,7 +67,7 @@ export async function fetchReviewsPaginated(sku: string, limit = 100): Promise<R
         break; // No more reviews
       }
 
-      const normalizedReviews: Review[] = response.reviews.map((review) => ({
+      const normalizedReviews: any[] = response.reviews.map((review) => ({
         id: review.id.toString(),
         sku: review.sku.toString(),
         rating: review.rating,
@@ -101,8 +101,8 @@ export async function fetchReviewsPaginated(sku: string, limit = 100): Promise<R
   return reviews.slice(0, limit);
 }
 
-export async function scoreSentimentsTomorrow(reviews: Review[]): Promise<ScoredReview[]> {
-  const scoredReviews: ScoredReview[] = [];
+async function scoreSentimentsTomorrow(reviews: any[]): Promise<any[]> {
+  const scoredReviews: any[] = [];
   
   for (const review of reviews) {
     try {
@@ -191,7 +191,7 @@ export async function scoreSentimentsTomorrow(reviews: Review[]): Promise<Scored
   return scoredReviews;
 }
 
-export async function aggregate(scoredReviews: ScoredReview[]): Promise<{ avgSentiment: number; avgStars: number; count: number }> {
+async function aggregate(scoredReviews: any[]): Promise<{ avgSentiment: number; avgStars: number; count: number }> {
   if (scoredReviews.length === 0) {
     return {
       avgSentiment: 0,
@@ -213,7 +213,7 @@ export async function aggregate(scoredReviews: ScoredReview[]): Promise<{ avgSen
 // In-memory storage for results (replace with DB for production)
 const resultsStore = new Map<string, { status: string; data?: unknown; message?: string; timestamp?: string }>();
 
-export async function publish(runId: string, payload: unknown): Promise<void> {
+async function publish(runId: string, payload: unknown): Promise<void> {
   resultsStore.set(runId, {
     status: 'complete',
     data: payload,
@@ -221,18 +221,29 @@ export async function publish(runId: string, payload: unknown): Promise<void> {
   });
 }
 
-export function getResult(runId: string): { status: string; data?: unknown; message?: string; timestamp?: string } | { status: string } {
+function getResult(runId: string): { status: string; data?: unknown; message?: string; timestamp?: string } | { status: string } {
   return resultsStore.get(runId) || { status: 'running' };
 }
 
-export function setRunningStatus(runId: string): void {
+function setRunningStatus(runId: string): void {
   resultsStore.set(runId, { status: 'running' });
 }
 
-export async function setErrorStatus(runId: string, message: string): Promise<void> {
+async function setErrorStatus(runId: string, message: string): Promise<void> {
   resultsStore.set(runId, { 
     status: 'error', 
     message,
     timestamp: new Date().toISOString()
   });
 }
+
+module.exports = {
+  resolveSkuAndCanonicalUrl,
+  fetchReviewsPaginated,
+  scoreSentimentsTomorrow,
+  aggregate,
+  publish,
+  getResult,
+  setRunningStatus,
+  setErrorStatus
+};
