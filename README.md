@@ -5,7 +5,7 @@ A Next.js application that analyzes customer sentiment from Best Buy product rev
 ## Features
 
 - **URL Processing**: Extract product SKU from Best Buy URLs with redirect following
-- **Review Fetching**: Paginated retrieval of up to 100 most recent reviews via Best Buy API
+- **Review Fetching**: Paginated retrieval of up to 40 most recent reviews via Best Buy API
 - **Sentiment Analysis**: AI-powered sentiment scoring (0-100) using Together AI API
 - **Real-time UI**: Live results display with polling and loading states
 - **Comprehensive Reporting**: Shows averages, individual reviews, and product links
@@ -72,7 +72,7 @@ Visit http://localhost:3000 to use the application.
 
 2. **Analysis Process**: The system will:
    - Extract the product SKU from the URL
-   - Fetch up to 100 most recent reviews
+   - Fetch up to 40 most recent reviews
    - Score each review's sentiment using AI (0-100 scale)
    - Calculate average sentiment and star ratings
 
@@ -132,7 +132,7 @@ npm run lint         # Run ESLint
 
 ## Limitations
 
-- Maximum 100 reviews per analysis (API pagination limit)
+- Maximum 40 reviews per analysis (API pagination limit)
 - Sentiment scoring uses AI model with ~50-token responses
 - Requires active Temporal server for workflow execution
 - Best Buy URLs only (no other retailer support)

@@ -25,6 +25,11 @@ export type WorkflowInput = {
   maxReviews?: number;
 };
 
+export type SkuWorkflowInput = {
+  sku: string;
+  maxReviews?: number;
+};
+
 export type ApiResponse<T = unknown> = {
   status: "running" | "complete" | "error" | "not_found";
   message?: string;

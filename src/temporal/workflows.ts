@@ -1,5 +1,5 @@
 import { proxyActivities, workflowInfo } from '@temporalio/workflow';
-import type { WorkflowInput, Report } from '../lib/types';
+import type { WorkflowInput, SkuWorkflowInput, Report } from '../lib/types';
 import type * as activities from './activities';
 
 const {
@@ -51,5 +51,40 @@ export async function sentimentWorkflow(input: WorkflowInput): Promise<Report> {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Sentiment workflow failed: ${errorMessage}`);
+  }
+}
+
+export async function sentimentWorkflowBySku(input: SkuWorkflowInput): Promise<Report> {
+  const { sku, maxReviews = 100 } = input;
+  const runId = `run-${workflowInfo().workflowId}`;
+  
+  try {
+    // Step 1: Fetch reviews (skip URL resolution)
+    const reviews = await fetchReviewsPaginated(sku, maxReviews);
+    
+    // Step 2: Score sentiments
+    const scoredReviews = await scoreSentimentsTogether(reviews);
+    
+    // Step 3: Aggregate results
+    const aggregation = await aggregate(scoredReviews);
+    
+    // Step 4: Build final report
+    const canonicalUrl = `https://www.bestbuy.com/site/product/${sku}.p`;
+    const report: Report = {
+      sku,
+      canonicalUrl,
+      count: aggregation.count,
+      avgSentiment: aggregation.avgSentiment,
+      avgStars: aggregation.avgStars,
+      reviews: scoredReviews,
+    };
+    
+    // Step 5: Publish results
+    await publish(runId, report);
+    
+    return report;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`SKU sentiment workflow failed: ${errorMessage}`);
   }
 }
