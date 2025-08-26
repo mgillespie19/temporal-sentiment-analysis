@@ -163,17 +163,17 @@ async function fetchReviewsPaginated(sku: string, limit = 100): Promise<any[]> {
   return reviews.slice(0, limit);
 }
 
-async function scoreSentimentsTomorrow(reviews: any[]): Promise<any[]> {
+async function scoreSentimentsTogether(reviews: any[]): Promise<any[]> {
   const scoredReviews: any[] = [];
   
-  console.log(`[scoreSentimentsTomorrow] Starting sentiment analysis for ${reviews.length} reviews`);
+  console.log(`[scoreSentimentsTogether] Starting sentiment analysis for ${reviews.length} reviews`);
   
   for (let i = 0; i < reviews.length; i++) {
     const review = reviews[i];
     try {
       const reviewText = `${review.title}\n\n${review.comment}`.trim();
-      console.log(`[scoreSentimentsTomorrow] Processing review ${i + 1}/${reviews.length}, ID: ${review.id}`);
-      console.log(`[scoreSentimentsTomorrow] Review text preview: ${reviewText.substring(0, 100)}...`);
+      console.log(`[scoreSentimentsTogether] Processing review ${i + 1}/${reviews.length}, ID: ${review.id}`);
+      console.log(`[scoreSentimentsTogether] Review text preview: ${reviewText.substring(0, 100)}...`);
       
       const requestBody = {
         model: 'OpenAI/gpt-oss-20B',
@@ -191,7 +191,7 @@ async function scoreSentimentsTomorrow(reviews: any[]): Promise<any[]> {
         temperature: 0
       };
 
-      console.log(`[scoreSentimentsTomorrow] Making API request to Together AI...`);
+      console.log(`[scoreSentimentsTogether] Making API request to Together AI...`);
       const { body } = await request(`${config.TOGETHER_API_BASE}/v1/chat/completions`, {
         method: 'POST',
         headers: {
@@ -202,29 +202,29 @@ async function scoreSentimentsTomorrow(reviews: any[]): Promise<any[]> {
       });
 
       const response = await body.json() as { choices?: Array<{ message?: { content?: string } }> };
-      console.log(`[scoreSentimentsTomorrow] API response:`, JSON.stringify(response, null, 2));
+      console.log(`[scoreSentimentsTogether] API response:`, JSON.stringify(response, null, 2));
       
       if (!response.choices?.[0]?.message?.content) {
         throw new Error('No content in API response');
       }
 
       const apiContent = response.choices[0].message.content.trim();
-      console.log(`[scoreSentimentsTomorrow] API content: ${apiContent}`);
+      console.log(`[scoreSentimentsTogether] API content: ${apiContent}`);
 
       let sentimentScore: number;
       try {
         const parsed = JSON.parse(apiContent);
         sentimentScore = Math.max(0, Math.min(100, parseInt(parsed.score)));
-        console.log(`[scoreSentimentsTomorrow] Parsed sentiment score: ${sentimentScore}`);
+        console.log(`[scoreSentimentsTogether] Parsed sentiment score: ${sentimentScore}`);
       } catch (parseError) {
-        console.error(`[scoreSentimentsTomorrow] JSON parse error:`, parseError);
-        console.log(`[scoreSentimentsTomorrow] Attempting to extract number from: ${apiContent}`);
+        console.error(`[scoreSentimentsTogether] JSON parse error:`, parseError);
+        console.log(`[scoreSentimentsTogether] Attempting to extract number from: ${apiContent}`);
         
         // Try to extract a number from the response
         const numberMatch = apiContent.match(/\d+/);
         if (numberMatch) {
           sentimentScore = Math.max(0, Math.min(100, parseInt(numberMatch[0])));
-          console.log(`[scoreSentimentsTomorrow] Extracted sentiment score: ${sentimentScore}`);
+          console.log(`[scoreSentimentsTogether] Extracted sentiment score: ${sentimentScore}`);
         } else {
           throw new Error(`Could not extract sentiment score from: ${apiContent}`);
         }
@@ -235,13 +235,13 @@ async function scoreSentimentsTomorrow(reviews: any[]): Promise<any[]> {
         sentiment: sentimentScore
       });
       
-      console.log(`[scoreSentimentsTomorrow] Review ${i + 1} completed with sentiment: ${sentimentScore}`);
+      console.log(`[scoreSentimentsTogether] Review ${i + 1} completed with sentiment: ${sentimentScore}`);
       
     } catch (error) {
-      console.error(`[scoreSentimentsTomorrow] Error scoring sentiment for review ${review.id}:`, error);
+      console.error(`[scoreSentimentsTogether] Error scoring sentiment for review ${review.id}:`, error);
       // Use a more intelligent fallback based on rating
       const fallbackSentiment = review.rating >= 4 ? 75 : review.rating <= 2 ? 25 : 50;
-      console.log(`[scoreSentimentsTomorrow] Using fallback sentiment ${fallbackSentiment} based on rating ${review.rating}`);
+      console.log(`[scoreSentimentsTogether] Using fallback sentiment ${fallbackSentiment} based on rating ${review.rating}`);
       
       scoredReviews.push({
         ...review,
@@ -294,7 +294,7 @@ async function setErrorStatus(runId: string, message: string): Promise<void> {
 module.exports = {
   resolveSkuAndCanonicalUrl,
   fetchReviewsPaginated,
-  scoreSentimentsTomorrow,
+  scoreSentimentsTogether,
   aggregate,
   publish,
   getResult,

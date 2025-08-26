@@ -5,7 +5,7 @@ import type * as activities from './activities';
 const {
   resolveSkuAndCanonicalUrl,
   fetchReviewsPaginated,
-  scoreSentimentsTomorrow,
+  scoreSentimentsTogether,
   aggregate,
   publish,
 } = proxyActivities<typeof activities>({
@@ -29,7 +29,7 @@ export async function sentimentWorkflow(input: WorkflowInput): Promise<Report> {
     const reviews = await fetchReviewsPaginated(sku, maxReviews);
     
     // Step 3: Score sentiments
-    const scoredReviews = await scoreSentimentsTomorrow(reviews);
+    const scoredReviews = await scoreSentimentsTogether(reviews);
     
     // Step 4: Aggregate results
     const aggregation = await aggregate(scoredReviews);

@@ -6,7 +6,7 @@ A Next.js application that analyzes customer sentiment from Best Buy product rev
 
 - **URL Processing**: Extract product SKU from Best Buy URLs with redirect following
 - **Review Fetching**: Paginated retrieval of up to 100 most recent reviews via Best Buy API
-- **Sentiment Analysis**: AI-powered sentiment scoring (0-100) using Tomorrow API
+- **Sentiment Analysis**: AI-powered sentiment scoring (0-100) using Together AI API
 - **Real-time UI**: Live results display with polling and loading states
 - **Comprehensive Reporting**: Shows averages, individual reviews, and product links
 
@@ -14,7 +14,7 @@ A Next.js application that analyzes customer sentiment from Best Buy product rev
 
 - **Frontend**: Next.js 14, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Next.js API routes, Temporal workflows
-- **APIs**: Best Buy Reviews API, Tomorrow API (Together AI)
+- **APIs**: Best Buy Reviews API, Together AI API
 - **Workflow Engine**: Temporal TypeScript SDK
 
 ## Setup
@@ -29,8 +29,8 @@ cp .env.example .env.local
 
 Required environment variables:
 - `BESTBUY_API_KEY`: Your Best Buy Developer API key
-- `TOGETHER_API_BASE`: Tomorrow API base URL (usually https://api.together.xyz)
-- `TOGETHER_API_KEY`: Your Tomorrow/Together AI API key
+- `TOGETHER_API_BASE`: Together AI API base URL (usually https://api.together.xyz)
+- `TOGETHER_API_KEY`: Your Together AI API key
 - `TEMPORAL_ADDRESS`: Temporal server address (localhost:7233 for local dev)
 
 ### 2. Install Dependencies
@@ -95,7 +95,7 @@ Visit http://localhost:3000 to use the application.
 
 1. **resolveSkuAndCanonicalUrl**: Extract SKU from URL with redirect handling
 2. **fetchReviewsPaginated**: Fetch reviews from Best Buy API (paginated)
-3. **scoreSentimentsTomorrow**: Score sentiment using Tomorrow API
+3. **scoreSentimentsTogether**: Score sentiment using Together AI API
 4. **aggregate**: Calculate averages
 5. **publish**: Store results for UI retrieval
 

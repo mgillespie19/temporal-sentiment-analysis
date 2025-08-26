@@ -2,8 +2,8 @@ const { z } = require('zod');
 
 const envSchema = z.object({
   BESTBUY_API_KEY: z.string().min(1, "Best Buy API key is required"),
-  TOGETHER_API_BASE: z.string().url("Tomorrow API base must be a valid URL"),
-  TOGETHER_API_KEY: z.string().min(1, "Tomorrow API key is required"),
+  TOGETHER_API_BASE: z.string().url("Together AI API base must be a valid URL"),
+  TOGETHER_API_KEY: z.string().min(1, "Together AI API key is required"),
   TEMPORAL_ADDRESS: z.string().min(1, "Temporal address is required"),
   OPENAI_API_KEY: z.string().optional(),
 });
