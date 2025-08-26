@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createTemporalClient } from '../../../temporal/client';
-import { setRunningStatus } from '../../../temporal/activities';
 import type { RunResponse } from '../../../lib/types';
 
 const runRequestSchema = z.object({
@@ -25,9 +24,6 @@ export async function POST(request: NextRequest) {
     
     const workflowId = `sentiment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const runId = `run-${workflowId}`;
-    
-    // Set initial running status
-    setRunningStatus(runId);
     
     // Start the workflow
     console.log(`Starting workflow: ${workflowId} on task queue: sentiment-analysis`);

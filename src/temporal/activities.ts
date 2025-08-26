@@ -222,31 +222,23 @@ async function aggregate(scoredReviews: any[]): Promise<{ avgSentiment: number; 
   };
 }
 
-// In-memory storage for results (replace with DB for production)
-const resultsStore = new Map<string, { status: string; data?: unknown; message?: string; timestamp?: string }>();
-
+// These functions are no longer needed since we get results directly from Temporal
+// Keeping them for backwards compatibility but they do nothing
 async function publish(runId: string, payload: unknown): Promise<void> {
-  resultsStore.set(runId, {
-    status: 'complete',
-    data: payload,
-    timestamp: new Date().toISOString()
-  });
+  console.log(`[publish] Results will be returned by Temporal workflow directly`);
 }
 
-function getResult(runId: string): { status: string; data?: unknown; message?: string; timestamp?: string } | { status: string } {
-  return resultsStore.get(runId) || { status: 'running' };
+function getResult(runId: string): { status: string } {
+  console.log(`[getResult] Results should be retrieved via Temporal API`);
+  return { status: 'running' };
 }
 
 function setRunningStatus(runId: string): void {
-  resultsStore.set(runId, { status: 'running' });
+  console.log(`[setRunningStatus] Status managed by Temporal`);
 }
 
 async function setErrorStatus(runId: string, message: string): Promise<void> {
-  resultsStore.set(runId, { 
-    status: 'error', 
-    message,
-    timestamp: new Date().toISOString()
-  });
+  console.log(`[setErrorStatus] Error status managed by Temporal`);
 }
 
 module.exports = {
