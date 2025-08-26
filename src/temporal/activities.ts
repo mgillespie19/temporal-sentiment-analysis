@@ -171,23 +171,57 @@ async function scoreSentimentsTogether(reviews: any[]): Promise<any[]> {
   for (let i = 0; i < reviews.length; i++) {
     const review = reviews[i];
     try {
-      const reviewText = `${review.title}\n\n${review.comment}`.trim();
+      const reviewText = `${review.title || ''}\n\n${review.comment || ''}`.trim();
+      const rating = review.rating || 0;
+      
       console.log(`[scoreSentimentsTogether] Processing review ${i + 1}/${reviews.length}, ID: ${review.id}`);
       console.log(`[scoreSentimentsTogether] Review text preview: ${reviewText.substring(0, 100)}...`);
+      console.log(`[scoreSentimentsTogether] Star rating: ${rating}`);
+      
+      // Check if there's minimal text content (less than 10 characters of meaningful text)
+      const meaningfulText = reviewText.replace(/\s+/g, ' ').trim();
+      const hasMinimalText = meaningfulText.length < 10;
+      
+      if (hasMinimalText && rating > 0) {
+        // Fallback to star rating as percentage (1 star = 20%, 2 stars = 40%, etc.)
+        const sentimentScore = Math.round((rating / 5) * 100);
+        console.log(`[scoreSentimentsTogether] Minimal text detected, using star rating fallback: ${sentimentScore}`);
+        
+        scoredReviews.push({
+          ...review,
+          sentiment: sentimentScore
+        });
+        
+        console.log(`[scoreSentimentsTogether] Review ${i + 1} completed with fallback sentiment: ${sentimentScore}`);
+        continue;
+      }
       
       const requestBody = {
         model: 'OpenAI/gpt-oss-20B',
         messages: [
           {
             role: 'system',
-            content: 'You are a sentiment analyzer. Analyze the sentiment of product reviews and return only a JSON object with a score from 0-100.'
+            content: 'You are a sentiment analyzer for product reviews. Your job is to analyze the sentiment expressed in review text and provide a score from 0-100 that aligns with the star rating context. Return only a JSON object.'
           },
           {
             role: 'user',
-            content: `Analyze the sentiment of this product review and return only JSON in this format: {"score": X} where X is a number from 0 (very negative) to 100 (very positive).\n\nReview:\n${reviewText}`
+            content: `Analyze this product review and return JSON: {"score": X} where X is a specific number 0-100.
+
+SCORING FORMULA: Use 70% weight on star rating + 30% weight on text sentiment.
+
+STAR RATING BASELINES:
+- 5 stars = 100 baseline → Final range: 70-100 (adjust down for negative text)
+- 4 stars = 80 baseline → Final range: 56-95 (adjust down for negative text)  
+- 3 stars = 60 baseline → Final range: 42-75 (adjust up/down based on text)
+- 2 stars = 40 baseline → Final range: 28-55 (adjust up for positive text)
+- 1 star = 20 baseline → Final range: 0-35 (adjust up for positive text)
+
+Return a SPECIFIC number (like 73, 45, 91) not a range. Heavily weight the star rating but let negative text sentiment pull high-rated reviews down within their range.
+
+Star Rating: ${rating}/5 stars
+Review Text: ${reviewText}`
           }
         ],
-        max_tokens: 50,
         temperature: 0
       };
 
@@ -230,6 +264,23 @@ async function scoreSentimentsTogether(reviews: any[]): Promise<any[]> {
         }
       }
 
+      // Validate sentiment score against star rating to prevent unrealistic scores
+      const starRatingBaseline = Math.round((rating / 5) * 100);
+      const maxDeviation = 30; // Allow up to 30 points deviation from star rating baseline
+      
+      if (Math.abs(sentimentScore - starRatingBaseline) > maxDeviation) {
+        console.log(`[scoreSentimentsTogether] Sentiment score ${sentimentScore} deviates too much from ${rating}-star baseline ${starRatingBaseline}`);
+        
+        // Adjust score to be within reasonable range of star rating
+        if (sentimentScore < starRatingBaseline - maxDeviation) {
+          sentimentScore = Math.max(starRatingBaseline - maxDeviation, 0);
+        } else if (sentimentScore > starRatingBaseline + maxDeviation) {
+          sentimentScore = Math.min(starRatingBaseline + maxDeviation, 100);
+        }
+        
+        console.log(`[scoreSentimentsTogether] Adjusted sentiment score to: ${sentimentScore}`);
+      }
+
       scoredReviews.push({
         ...review,
         sentiment: sentimentScore
@@ -239,8 +290,8 @@ async function scoreSentimentsTogether(reviews: any[]): Promise<any[]> {
       
     } catch (error) {
       console.error(`[scoreSentimentsTogether] Error scoring sentiment for review ${review.id}:`, error);
-      // Use a more intelligent fallback based on rating
-      const fallbackSentiment = review.rating >= 4 ? 75 : review.rating <= 2 ? 25 : 50;
+      // Use star rating as fallback (convert to percentage)
+      const fallbackSentiment = review.rating ? Math.round((review.rating / 5) * 100) : 50;
       console.log(`[scoreSentimentsTogether] Using fallback sentiment ${fallbackSentiment} based on rating ${review.rating}`);
       
       scoredReviews.push({
