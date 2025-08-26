@@ -5,6 +5,7 @@ const envSchema = z.object({
   TOGETHER_API_BASE: z.string().url("Tomorrow API base must be a valid URL"),
   TOGETHER_API_KEY: z.string().min(1, "Tomorrow API key is required"),
   TEMPORAL_ADDRESS: z.string().min(1, "Temporal address is required"),
+  OPENAI_API_KEY: z.string().optional(),
 });
 
 function getEnvVars() {
@@ -13,6 +14,7 @@ function getEnvVars() {
     TOGETHER_API_BASE: process.env.TOGETHER_API_BASE,
     TOGETHER_API_KEY: process.env.TOGETHER_API_KEY,
     TEMPORAL_ADDRESS: process.env.TEMPORAL_ADDRESS,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   };
   
   try {
@@ -25,6 +27,7 @@ function getEnvVars() {
       TOGETHER_API_BASE: process.env.TOGETHER_API_BASE || 'https://api.together.xyz',
       TOGETHER_API_KEY: process.env.TOGETHER_API_KEY || '',
       TEMPORAL_ADDRESS: process.env.TEMPORAL_ADDRESS || 'localhost:7233',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
     };
   }
 }
