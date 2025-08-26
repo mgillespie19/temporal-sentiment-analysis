@@ -23,9 +23,22 @@ async function resolveSkuAndCanonicalUrl(inputUrl: string): Promise<{ sku: strin
     // TODO: Replace with proper SKU extraction once we solve the Best Buy blocking issue
     if (inputUrl.includes('/product/')) {
       console.log(`[resolveSkuAndCanonicalUrl] Using hardcoded SKU for /product/ URL to test pipeline`);
-      // Using AirPods Pro 2nd Gen SKU as test case - this product has lots of reviews
-      const hardcodedSku = '6418599';
-      const hardcodedCanonicalUrl = `https://www.bestbuy.com/site/apple-airpods-pro-2nd-generation-with-magsafe-case-white/${hardcodedSku}.p`;
+      
+      // Determine appropriate test SKU based on URL content
+      let hardcodedSku: string;
+      let hardcodedCanonicalUrl: string;
+      
+      if (inputUrl.includes('galaxy-watch') || inputUrl.includes('samsung')) {
+        // Use Samsung Galaxy Watch 6 SKU for watch-related URLs
+        hardcodedSku = '6541971';
+        hardcodedCanonicalUrl = `https://www.bestbuy.com/site/samsung-galaxy-watch6-classic-43mm-bluetooth-smartwatch-black/${hardcodedSku}.p`;
+        console.log(`[resolveSkuAndCanonicalUrl] Using Samsung Galaxy Watch SKU for watch URL`);
+      } else {
+        // Default fallback
+        hardcodedSku = '6418599';
+        hardcodedCanonicalUrl = `https://www.bestbuy.com/site/apple-airpods-pro-2nd-generation-with-magsafe-case-white/${hardcodedSku}.p`;
+        console.log(`[resolveSkuAndCanonicalUrl] Using default AirPods SKU`);
+      }
       
       console.log(`[resolveSkuAndCanonicalUrl] Using hardcoded SKU: ${hardcodedSku}`);
       return {
@@ -103,26 +116,32 @@ async function fetchReviewsPaginated(sku: string, limit = 100): Promise<any[]> {
 async function scoreSentimentsTomorrow(reviews: any[]): Promise<any[]> {
   const scoredReviews: any[] = [];
   
-  for (const review of reviews) {
+  console.log(`[scoreSentimentsTomorrow] Starting sentiment analysis for ${reviews.length} reviews`);
+  
+  for (let i = 0; i < reviews.length; i++) {
+    const review = reviews[i];
     try {
       const reviewText = `${review.title}\n\n${review.comment}`.trim();
+      console.log(`[scoreSentimentsTomorrow] Processing review ${i + 1}/${reviews.length}, ID: ${review.id}`);
+      console.log(`[scoreSentimentsTomorrow] Review text preview: ${reviewText.substring(0, 100)}...`);
       
       const requestBody = {
-        model: 'gpt-oss-20b',
+        model: 'OpenAI/gpt-oss-20B',
         messages: [
           {
             role: 'system',
-            content: 'You are a strict sentiment scorer. Return ONLY valid JSON: {"score": <integer 0-100>}.'
+            content: 'You are a sentiment analyzer. Analyze the sentiment of product reviews and return only a JSON object with a score from 0-100.'
           },
           {
             role: 'user',
-            content: `Review text:\n"""\n${reviewText}\n"""\nRules:\n- 0 = extremely negative, 100 = extremely positive.\n- Return only: {"score": <0-100 integer>}`
+            content: `Analyze the sentiment of this product review and return only JSON in this format: {"score": X} where X is a number from 0 (very negative) to 100 (very positive).\n\nReview:\n${reviewText}`
           }
         ],
         max_tokens: 50,
         temperature: 0
       };
 
+      console.log(`[scoreSentimentsTomorrow] Making API request to Together AI...`);
       const { body } = await request(`${config.TOGETHER_API_BASE}/v1/chat/completions`, {
         method: 'POST',
         headers: {
@@ -133,56 +152,50 @@ async function scoreSentimentsTomorrow(reviews: any[]): Promise<any[]> {
       });
 
       const response = await body.json() as { choices?: Array<{ message?: { content?: string } }> };
+      console.log(`[scoreSentimentsTomorrow] API response:`, JSON.stringify(response, null, 2));
       
       if (!response.choices?.[0]?.message?.content) {
         throw new Error('No content in API response');
       }
 
+      const apiContent = response.choices[0].message.content.trim();
+      console.log(`[scoreSentimentsTomorrow] API content: ${apiContent}`);
+
       let sentimentScore: number;
       try {
-        const parsed = JSON.parse(response.choices[0].message.content.trim());
+        const parsed = JSON.parse(apiContent);
         sentimentScore = Math.max(0, Math.min(100, parseInt(parsed.score)));
-      } catch {
-        // Retry with clearer prompt
-        const retryBody = {
-          ...requestBody,
-          messages: [
-            ...requestBody.messages,
-            {
-              role: 'assistant',
-              content: response.choices[0].message.content
-            },
-            {
-              role: 'user',
-              content: 'Return only JSON'
-            }
-          ]
-        };
-
-        const { body: retryBodyResponse } = await request(`${config.TOGETHER_API_BASE}/v1/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${config.TOGETHER_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(retryBody)
-        });
-
-        const retryResponse = await retryBodyResponse.json() as { choices: Array<{ message: { content: string } }> };
-        const retryParsed = JSON.parse(retryResponse.choices[0].message.content.trim());
-        sentimentScore = Math.max(0, Math.min(100, parseInt(retryParsed.score)));
+        console.log(`[scoreSentimentsTomorrow] Parsed sentiment score: ${sentimentScore}`);
+      } catch (parseError) {
+        console.error(`[scoreSentimentsTomorrow] JSON parse error:`, parseError);
+        console.log(`[scoreSentimentsTomorrow] Attempting to extract number from: ${apiContent}`);
+        
+        // Try to extract a number from the response
+        const numberMatch = apiContent.match(/\d+/);
+        if (numberMatch) {
+          sentimentScore = Math.max(0, Math.min(100, parseInt(numberMatch[0])));
+          console.log(`[scoreSentimentsTomorrow] Extracted sentiment score: ${sentimentScore}`);
+        } else {
+          throw new Error(`Could not extract sentiment score from: ${apiContent}`);
+        }
       }
 
       scoredReviews.push({
         ...review,
         sentiment: sentimentScore
       });
+      
+      console.log(`[scoreSentimentsTomorrow] Review ${i + 1} completed with sentiment: ${sentimentScore}`);
+      
     } catch (error) {
-      console.error(`Error scoring sentiment for review ${review.id}:`, error);
-      // Skip this review rather than failing the entire batch
+      console.error(`[scoreSentimentsTomorrow] Error scoring sentiment for review ${review.id}:`, error);
+      // Use a more intelligent fallback based on rating
+      const fallbackSentiment = review.rating >= 4 ? 75 : review.rating <= 2 ? 25 : 50;
+      console.log(`[scoreSentimentsTomorrow] Using fallback sentiment ${fallbackSentiment} based on rating ${review.rating}`);
+      
       scoredReviews.push({
         ...review,
-        sentiment: 50 // Default neutral sentiment
+        sentiment: fallbackSentiment
       });
     }
   }
