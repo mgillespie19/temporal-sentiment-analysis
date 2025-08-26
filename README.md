@@ -32,6 +32,7 @@ Required environment variables:
 - `TOGETHER_API_BASE`: Together AI API base URL (usually https://api.together.xyz)
 - `TOGETHER_API_KEY`: Your Together AI API key
 - `TEMPORAL_ADDRESS`: Temporal server address (localhost:7233 for local dev)
+- `OPENAI_API_KEY`: Your OpenAI API key
 
 ### 2. Install Dependencies
 
@@ -46,9 +47,6 @@ You need a running Temporal server. For local development:
 ```bash
 # Using Temporal CLI (recommended)
 temporal server start-dev
-
-# Or using Docker
-docker run --network=host --rm temporalio/auto-setup:latest
 ```
 
 ### 4. Start the Temporal Worker
@@ -56,7 +54,7 @@ docker run --network=host --rm temporalio/auto-setup:latest
 In a separate terminal:
 
 ```bash
-npm run worker:dev
+npm run worker
 ```
 
 ### 5. Start the Next.js Application
@@ -70,8 +68,7 @@ Visit http://localhost:3000 to use the application.
 ## Usage
 
 1. **Input URL**: Paste any Best Buy product URL into the form
-   - Full URLs: `https://www.bestbuy.com/site/apple-iphone-15/6418599.p`
-   - Short URLs: `https://www.bestbuy.com/product/6418599`
+   - `https://www.bestbuy.com/product/samsung-galaxy-watch7-aluminum-smartwatch-40mm-bt-cream-2024/J3ZYG2KQ89`
 
 2. **Analysis Process**: The system will:
    - Extract the product SKU from the URL
@@ -79,7 +76,7 @@ Visit http://localhost:3000 to use the application.
    - Score each review's sentiment using AI (0-100 scale)
    - Calculate average sentiment and star ratings
 
-3. **Results**: View the comprehensive report showing:
+3. **Results**: View the report showing:
    - Overall sentiment average and star rating
    - Individual review details with sentiment scores
    - Links back to the product on Best Buy
@@ -113,8 +110,7 @@ Each step is implemented as a Temporal activity with proper error handling, retr
 
 ```bash
 npm run dev          # Start Next.js dev server
-npm run worker       # Start Temporal worker (production)
-npm run worker:dev   # Start Temporal worker (development)
+npm run worker       # Start Temporal worker
 npm run build        # Build for production
 npm run start        # Start production server
 npm run lint         # Run ESLint
