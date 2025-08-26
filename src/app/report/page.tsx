@@ -142,12 +142,12 @@ export default function ReportPage() {
   const report = result.data;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 text-gray-500">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Sentiment Analysis Report</h1>
-          <Button variant="outline" onClick={() => router.push('/')}>
+          <Button variant="outline" onClick={() => router.push('/')} className="text-white">
             New Analysis
           </Button>
         </div>
@@ -163,7 +163,7 @@ export default function ReportPage() {
                 rel="noopener noreferrer"
                 className="text-sm"
               >
-                <Button variant="outline">
+                <Button variant="outline" className="text-white">
                   Open on Best Buy
                 </Button>
               </a>
